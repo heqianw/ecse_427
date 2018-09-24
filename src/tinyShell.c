@@ -6,12 +6,15 @@ int length(char *string){
 } 
 
 char *get_a_line(){
-    
+    char *line = NULL;
+    size_t bufsize = 0;
+    getline(&line, &bufsize, stdin);
+    return line;
 }
 
 int main(int argc, char *argv[]){
     while(1){
-        int line = get_a_line();
+        char *line = get_a_line();
         if (length(line) > 1)
             system(line);
         else    
