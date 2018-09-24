@@ -1,5 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+int my_system(char *command){
+    return -1;
+}
 
 int length(char *s){
     int x = 0;
@@ -19,7 +25,7 @@ int main(int argc, char *argv[]){
     while(1){
         char *line = get_a_line();
         if (length(line) > 1)
-            system(line);
+            my_system(line);
         else    
             return -1;
     }
