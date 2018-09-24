@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 int length(char *s){
     int x = 0;
@@ -20,6 +21,6 @@ int main(int argc, char *argv[]){
         if (length(line) > 1)
             system(line);
         else    
-            exit(0);
+            return -1;
     }
 }
