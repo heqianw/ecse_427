@@ -3,6 +3,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 int my_system(char *command){
     char* argv[50];
@@ -17,9 +19,9 @@ int my_system(char *command){
     }
     argv[i] = NULL;
     int argCount = i;
-    for(i = 0; i < argCount; i++){
-        printf("%s\n", argv[i]);
-    }
+    // for(i = 0; i < argCount; i++){
+    //     printf("%s\n", argv[i]);
+    // }
     strcpy(progpath, path);
     strcat(progpath, argv[0]);
 
@@ -29,11 +31,13 @@ int my_system(char *command){
         }
     }
     
-    int pid = fork();
+    int pid = vfork();
     if(pid == 0){
         execvp(progpath, argv);
     }
-    return 0;
+    else{
+        wait(NULL);
+    }
 }
 
 int length(char *s){
@@ -54,7 +58,7 @@ int main(int argc, char *argv[]){
     while(1){
         char *line = get_a_line();
         if (length(line) > 1)
-            system(line);
+            my_system(line);
         else    
             return -1;
     }
