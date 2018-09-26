@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-int my_system(char *command){
+int my_systemf(char *command){
     char* argv[50];
     char *list = strtok(command, " ");
     char* path = "/bin/";
@@ -40,6 +40,45 @@ int my_system(char *command){
     }
 }
 
+int my_systemv(char *command){
+    char* argv[50];
+    char *list = strtok(command, " ");
+    char* path = "/bin/";
+    char progpath[20];
+    int i = 0;
+    while(list != NULL && i < 50){
+        argv[i] = list;
+        list = strtok(NULL, " ");
+        i++;
+    }
+    argv[i] = NULL;
+    int argCount = i;
+    // for(i = 0; i < argCount; i++){
+    //     printf("%s\n", argv[i]);
+    // }
+    strcpy(progpath, path);
+    strcat(progpath, argv[0]);
+
+    for(i = 0; i < strlen(progpath); i++){
+        if(progpath[i] == '\n'){
+            progpath[i] = '\0';
+        }
+    }
+    
+    int pid = vfork();
+    if(pid == 0){
+        execvp(progpath, argv);
+    }
+    else{
+        wait(NULL);
+    }
+}
+
+// this one uses clone
+int my_systemc(char *command){
+
+}
+
 int length(char *s){
     int x = 0;
     while(s[x] != '\0')
@@ -58,7 +97,8 @@ int main(int argc, char *argv[]){
     while(1){
         char *line = get_a_line();
         if (length(line) > 1)
-            my_system(line);
+            //my_systemf(line);
+            my_systemv(line);
         else    
             return -1;
     }
