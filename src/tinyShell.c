@@ -158,7 +158,7 @@ int main(int argc, char *argv[]){
         char *line = get_a_line();
         if (length(line) > 1)
             //my_systemf(line);
-            my_systemc(line);
+            my_systemf(line);
         else    
             return -1;
     }
