@@ -9,10 +9,16 @@
 #include <signal.h>
 #include <fcntl.h>
 
+
 void my_systemf(char *command){
     int pid = fork();
     if(pid == 0){
+        char* myfifo = "/tmp/myfifo"; 
+        mkfifo(myfifo, 0666); 
+        close(0); 
+        open(myfifo, O_RDONLY);
         execl("/bin/sh", "sh", "-c", command, NULL);
+        close(0);
     }
     else{
         wait(NULL);
@@ -34,14 +40,7 @@ char *get_a_line(){
 }
 
 int main(int argc, char *argv[]){
-    int fd1; 
-    char * myfifo = "/tmp/myfifo"; 
-    mkfifo(myfifo, 0666); 
-    char str1[80], str2[80]; 
-
     while(1){
-        close(0);
-        fd1 = open(myfifo,O_RDONLY);
         char *line = get_a_line();
         if (length(line) > 1)
             my_systemf(line);

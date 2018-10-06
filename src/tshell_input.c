@@ -13,7 +13,12 @@
 void my_systemf(char *command){
     int pid = fork();
     if(pid == 0){
+        char* myfifo = "/tmp/myfifo";  
+        mkfifo(myfifo, 0666); 
+        close(1);
+        open(myfifo, O_WRONLY);
         execl("/bin/sh", "sh", "-c", command, NULL);
+        close(1);
     }
     else{
         wait(NULL);
@@ -35,18 +40,9 @@ char *get_a_line(){
 }
 
 int main(int argc, char *argv[]){
-    int fd; 
-    char * myfifo = "/tmp/myfifo";  
-    mkfifo(myfifo, 0666); 
-  
-    char arr1[80], arr2[80]; 
-
     while(1){
-        fd = open(myfifo, O_WRONLY); 
         char *line = get_a_line();
         if (length(line) > 1){
-            close(1);
-            fd = open(myfifo, O_WRONLY);
             my_systemf(line);
         }
         else    
