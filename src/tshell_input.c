@@ -1,27 +1,25 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#define _GNU_SOURCE
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <linux/sched.h>
 #include <signal.h>
+#include <fcntl.h>
 
-#include <fcntl.h> 
-#include <sys/stat.h> 
-#include <sys/types.h> 
-
-void my_systemf(char *command){
+void my_systemf(char *command, char* pipePath){
+    int status;
     int pid = fork();
     if(pid == 0){
-        char* myfifo = "/tmp/myfifo";  
-        mkfifo(myfifo, 0666); 
         close(1);
-        open(myfifo, O_WRONLY);
+        open(pipePath, O_WRONLY);
         execl("/bin/sh", "sh", "-c", command, NULL);
         close(1);
     }
-    else{
-        wait(NULL);
+    else {
+            waitpid(pid, &status, 0);
     }
 }
 
@@ -43,7 +41,7 @@ int main(int argc, char *argv[]){
     while(1){
         char *line = get_a_line();
         if (length(line) > 1){
-            my_systemf(line);
+            my_systemf(line, argv[1]);
         }
         else    
             return -1;
