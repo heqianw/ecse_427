@@ -9,10 +9,11 @@
 #include <linux/sched.h>
 #include <signal.h>
 
+
 void my_systemf(char *command){
     int pid = fork();
     if(pid == 0){
-        execl("/bin/sh", "/bin/sh", "-c", command, NULL);
+        execl("/bin/sh", "sh", "-c", command, NULL);
     }
     else{
         wait(NULL);
@@ -22,7 +23,7 @@ void my_systemf(char *command){
 void my_systemv(char *command){
     int pid = vfork();
     if(pid == 0){
-        execl("/bin/sh", "/bin/sh", "-c", command, NULL);
+        execl("/bin/sh", "sh", "-c", command, NULL);
     }
     else if(pid < 0){
         return;
@@ -32,7 +33,7 @@ void my_systemv(char *command){
     }
 }
 int fn (char *command){
-    execl("/bin/sh", "/bin/sh", "-c", command, NULL);
+    execl("/bin/sh", "sh", "-c", command, NULL);
     return 0;
 }
 
@@ -64,7 +65,7 @@ int main(int argc, char *argv[]){
     while(1){
         char *line = get_a_line();
         if (length(line) > 1)
-            my_systemc(line);
+            my_systemf(line);
         else    
             return -1;
     }
