@@ -1,0 +1,10 @@
+#include <stdio.h>
+
+int kv_store_create(char *name);
+int kv_store_write(char *key, char *value);
+char *kv_store_read(char *key);
+char **kv_store_read_all(char *key);
+
+int main (int argc, char *argv[]){
+    
+}
