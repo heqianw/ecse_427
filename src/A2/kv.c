@@ -34,6 +34,22 @@ int kv_store_create(char *name){
 
 int kv_store_write(char *key, char *value){
 
+    struct stat s;
+
+    char *str = key;
+    int fd = shm_open("hqmyshared", O_RDWR, S_IRWXU);
+    char *addr = mmap(NULL, strlen(str), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    unsigned long hashed = hash(key);
+
+}
+
+char *kv_store_read(char *key){
+    struct stat s;
+
+    char *str = key;
+    int fd = shm_open("hqmyshared",O_RDWR, S_IRWXU);
+    char *addr = mmap(NULL, strlen(str), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    unsigned long hashed = hash(key);
 }
 
 int main (int argc, char **argv){
