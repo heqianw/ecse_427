@@ -28,6 +28,7 @@ typedef struct kv_info{
 } kv_info;
 
 kv_info *this_kv_info;
+char *shmname;
 
 unsigned long hash(unsigned char *str){
     unsigned long hash = 0;
@@ -47,9 +48,9 @@ int kv_store_create(char *name){
        printf("Failed to create a KV");
        return -1;
     }
-
-    this_kv_info = mmap(NULL, strlen(str), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    ftruncate(fd, strlen(str));
+    shmname = name;
+    this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    ftruncate(fd, sizeof(kv_info));
     close(fd);
     // memcpy(addr, str, strlen(str));
     munmap(NULL, fd);
@@ -60,8 +61,7 @@ int kv_store_write(char *key, char *value){
 
     struct stat s;
 
-    char *str = key;
-    int fd = shm_open(kv_name, O_RDWR, S_IRWXU);
+    int fd = shm_open(shmname, O_RDWR, S_IRWXU);
     if (fd < 0){
        printf("Failed to write to KV \n");
        return -1;
@@ -73,7 +73,9 @@ int kv_store_write(char *key, char *value){
     }
     
     unsigned long hashed = hash(key);
+
     char *addr = mmap(hashed, s.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    
     ftruncate(fd, strlen(str));
     close(fd);
     memcpy(addr, str, strlen(str));
