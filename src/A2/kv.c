@@ -7,7 +7,7 @@
 #include <semaphore.h>
 
 int kv_store_create(char *name);
-// int kv_store_write(char *key, char *value);
+int kv_store_write(char *key, char *value);
 char *kv_store_read(char *key);
 char **kv_store_read_all(char *key);
 sem_t *my_sem;
@@ -76,17 +76,13 @@ int kv_store_write(char *key, char *value){
        return -1;
     }
 
-    // if(fstat(fd, &s) == -1){
-    //     printf("Failed to fstat \n");
-    //     return -1;
-    // }
-
     this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     ftruncate(fd, sizeof(kv_info));
     // printf("does this reach");
     my_sem = sem_open("/semHQ",O_CREAT | O_RDWR, S_IRWXU, 1);
     sem_wait(my_sem);
     
+    //this is the critical section
     int podIndex = hash(key) % 128;
     pod *actualPod = & (this_kv_info ->pods[podIndex]);
     int actualIndex = (actualPod -> index);
@@ -95,24 +91,39 @@ int kv_store_write(char *key, char *value){
     memcpy(&actualPair->key, key, strlen(key));
     memcpy(&actualPair->value, value , strlen(value));
 
+    actualIndex++;
+    if(actualIndex > 127){
+        actualPod -> index = actualIndex % 128;    
+    }
+    else{
+        actualPod -> index = actualIndex;
+    }
+    // end of critical section
     // actualPod -> index = (int)
 
     sem_post(my_sem);
 
+    // find a way to update the index
     
     munmap(this_kv_info, sizeof(kv_info));
     close(fd);
     return 0;
 }
 
-// char *kv_store_read(char *key){
-//     struct stat s;
+//once we compute hash and we get to the hash, parse the list of values for the key that we want, by doing key equality
+char *kv_store_read(char *key){
+    struct stat s;
 
-//     char *str = key;
-//     int fd = shm_open("hqmyshared",O_RDWR, S_IRWXU);
-//     char *addr = mmap(NULL, strlen(str), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-//     unsigned long hashed = hash(key);
-// }
+    char *str = key;
+    int fd = shm_open("hqmyshared",O_RDWR, S_IRWXU);
+    char *addr = mmap(NULL, strlen(str), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    unsigned long hashed = hash(key);
+}
+
+//instead of doing what we did earlier and compare the key, if hash function has same thing, just return all values in a char array
+char **kv_store_read_all(char *key){
+
+}
 
 int main (int argc, char **argv){
     // printf("create");
