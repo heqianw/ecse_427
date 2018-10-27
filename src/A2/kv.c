@@ -7,7 +7,7 @@
 #include <semaphore.h>
 
 int kv_store_create(char *name);
-int kv_store_write(char *key, char *value);
+// int kv_store_write(char *key, char *value);
 char *kv_store_read(char *key);
 char **kv_store_read_all(char *key);
 sem_t *my_sem;
@@ -69,7 +69,7 @@ int kv_store_create(char *name){
 }
 
 int kv_store_write(char *key, char *value){
-
+    
     int fd = shm_open(shmname, O_RDWR, S_IRWXU);
     if (fd < 0){
        printf("Failed to write to KV \n");
@@ -83,7 +83,7 @@ int kv_store_write(char *key, char *value){
 
     this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     ftruncate(fd, sizeof(kv_info));
-    printf("does this reach");
+    // printf("does this reach");
     my_sem = sem_open("/semHQ",O_CREAT | O_RDWR, S_IRWXU, 1);
     sem_wait(my_sem);
     
@@ -115,8 +115,7 @@ int kv_store_write(char *key, char *value){
 // }
 
 int main (int argc, char **argv){
-    printf("create");
+    // printf("create");
     kv_store_create(argv[1]);
-    printf("Create is done");
-    // kv_store_write(argv[2], argv[3]);
+    kv_store_write(argv[2], argv[3]);
 }
