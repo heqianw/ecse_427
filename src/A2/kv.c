@@ -2,6 +2,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <semaphore.h>
@@ -15,8 +16,8 @@ sem_t *my_sem;
 //array of pods
 //curr pair key/values
 typedef struct kv_pair{
-    char *key;
-    char *value;
+    char key[32];
+    char value[256];
 } kv_pair;
 
 typedef struct pod{
@@ -77,19 +78,19 @@ int kv_store_write(char *key, char *value){
     }
 
     this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    ftruncate(fd, sizeof(kv_info));
+    ftruncate(fd, sizeof(kv_info)+sizeof(char));
     // printf("does this reach");
     my_sem = sem_open("/semHQ",O_CREAT | O_RDWR, S_IRWXU, 1);
     sem_wait(my_sem);
     
     //this is the critical section
     int podIndex = hash(key) % 128;
-    pod *actualPod = & (this_kv_info ->pods[podIndex]);
+    pod *actualPod = & (this_kv_info -> pods[podIndex]);
     int actualIndex = (actualPod -> index);
     kv_pair *actualPair = & (actualPod -> kv_pairs[actualIndex]);
     
-    memcpy(&actualPair->key, key, strlen(key));
-    memcpy(&actualPair->value, value , strlen(value));
+    memcpy(&actualPair -> key, key, strlen(key));
+    memcpy(&actualPair -> value, value , strlen(value) + 1);
 
     actualIndex++;
     if(actualIndex > 127){
@@ -103,6 +104,8 @@ int kv_store_write(char *key, char *value){
 
     sem_post(my_sem);
 
+    printf("Pod number %d \n", podIndex);
+    printf("Index of pod is %d\n", actualIndex);
     // find a way to update the index
     
     munmap(this_kv_info, sizeof(kv_info));
@@ -112,15 +115,45 @@ int kv_store_write(char *key, char *value){
 
 //once we compute hash and we get to the hash, parse the list of values for the key that we want, by doing key equality
 char *kv_store_read(char *key){
-    struct stat s;
+    int fd = shm_open(shmname, O_RDWR, S_IRWXU);
+    if (fd < 0){
+       printf("Failed to write to KV \n");
+       return -1;
+    }
 
-    char *str = key;
-    int fd = shm_open("hqmyshared",O_RDWR, S_IRWXU);
-    char *addr = mmap(NULL, strlen(str), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    unsigned long hashed = hash(key);
+    this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    ftruncate(fd, sizeof(kv_info)+sizeof(char));
+
+    // printf("does this reach");
+    my_sem = sem_open("/semHQ",O_CREAT | O_RDWR, S_IRWXU, 1);
+    sem_wait(my_sem);
+
+    int podIndex = hash(key) % 128;
+    pod *actualPod = & (this_kv_info -> pods[podIndex]);
+    int numberEntries = (actualPod -> index);
+    int i;
+    char *valueToReturn;
+    int found = 0;
+    for(i = 0; i < numberEntries; i++){
+        kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
+        char *storedKey = &(currentPair -> key);
+        if(strcmp(key, storedKey)){
+            valueToReturn = &(currentPair -> value);
+            found = 1;
+        }
+    }
+    sem_post(my_sem);
+    munmap(this_kv_info, sizeof(kv_info));
+    close(fd);
+    if(found == 1){
+        return valueToReturn;
+    }
+    else{
+        return NULL;
+    }
 }
 
-//instead of doing what we did earlier and compare the key, if hash function has same thing, just return all values in a char array
+// instead of doing what we did earlier and compare the key, if hash function has same thing, just return all values in a char array
 char **kv_store_read_all(char *key){
 
 }
