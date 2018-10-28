@@ -118,33 +118,44 @@ char *kv_store_read(char *key){
     int fd = shm_open(shmname, O_RDWR, S_IRWXU);
     if (fd < 0){
        printf("Failed to write to KV \n");
-       return -1;
+       return NULL;
     }
 
     this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     ftruncate(fd, sizeof(kv_info)+sizeof(char));
 
     // printf("does this reach");
+    int i;
+    char *valueToReturn;
+    int found = 0;
+
     my_sem = sem_open("/semHQ",O_CREAT | O_RDWR, S_IRWXU, 1);
     sem_wait(my_sem);
 
     int podIndex = hash(key) % 128;
     pod *actualPod = & (this_kv_info -> pods[podIndex]);
     int numberEntries = (actualPod -> index);
-    int i;
-    char *valueToReturn;
-    int found = 0;
+    
+
+    printf("The pod number is %d\n", podIndex);
+    printf("Found is %d\n", found);
     for(i = 0; i < numberEntries; i++){
         kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
-        char *storedKey = &(currentPair -> key);
-        if(strcmp(key, storedKey)){
-            valueToReturn = &(currentPair -> value);
+        char *storedKey = (currentPair -> key);
+        printf("Key is %s\n", key);
+        printf("StoredKey is %s\n", storedKey);
+        if(strcmp(key, storedKey) == 0){
+            printf("This is true\n");
+            valueToReturn = strdup((currentPair -> value));
             found = 1;
         }
     }
+    printf("Value Return is %s\n", valueToReturn);
     sem_post(my_sem);
     munmap(this_kv_info, sizeof(kv_info));
     close(fd);
+    printf("Found is %d\n", found);
+    
     if(found == 1){
         return valueToReturn;
     }
@@ -161,5 +172,6 @@ char **kv_store_read_all(char *key){
 int main (int argc, char **argv){
     // printf("create");
     kv_store_create(argv[1]);
-    kv_store_write(argv[2], argv[3]);
+    // kv_store_write(argv[2], argv[3]);
+    printf("%s", kv_store_read("testKey"));
 }
