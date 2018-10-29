@@ -195,7 +195,8 @@ char **kv_store_read_all(char *key){
         kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
         char *storedKey = (currentPair -> key);
         if(strcmp(key, storedKey) == 0){
-            printf("This is true\n");
+            printf("This is true\n"); 
+            allValues[count] = strdup((currentPair -> value));
             count++;
             found = 1;
         }
@@ -208,7 +209,7 @@ char **kv_store_read_all(char *key){
     printf("Found is %d\n", found);
     
     if(found == 1){
-        return valueToReturn;
+        return allValues;
     }
     else{
         return NULL;
@@ -219,5 +220,13 @@ int main (int argc, char **argv){
     // printf("create");
     kv_store_create(argv[1]);
     // kv_store_write(argv[2], argv[3]);
-    printf("%s", kv_store_read("testKey"));
+    // printf("%s", kv_store_read("testKey"));
+    char **values = kv_store_read_all("testKey");
+    int i = 0;
+    // while(*values){
+    //     printf( "%s\n", *values++ );
+    // }
+    for(i = 0; i < 5; i++){
+        printf("%s\n", values[i]);
+    }
 }
