@@ -12,6 +12,9 @@
 
 #include <semaphore.h>
 
+#define __KV_WRITERS_SEMAPHORE__	"WRITER_HQ_WANG_260688073"
+
+
 typedef struct kv_pair{
     char key[32];
     char value[256];

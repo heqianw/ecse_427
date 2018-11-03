@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <semaphore.h>
-
+#include "a2_lib.h"
 int kv_store_create(char *name);
 int kv_store_write(char *key, char *value);
 char *kv_store_read(char *key);
@@ -15,20 +15,20 @@ sem_t *my_sem;
 
 //array of pods
 //curr pair key/values
-typedef struct kv_pair{
-    char key[32];
-    char value[256];
-} kv_pair;
+// typedef struct kv_pair{
+//     char key[32];
+//     char value[256];
+// } kv_pair;
 
-typedef struct pod{
-    int index;
-    kv_pair kv_pairs[128];
-} pod;
+// typedef struct pod{
+//     int index;
+//     kv_pair kv_pairs[128];
+// } pod;
 
-typedef struct kv_info{
-    char *kv_name;
-    pod pods[128];
-} kv_info;
+// typedef struct kv_info{
+//     char *kv_name;
+//     pod pods[128];
+// } kv_info;
 
 kv_info *this_kv_info;
 char *shmname;
@@ -80,7 +80,7 @@ int kv_store_write(char *key, char *value){
     this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     ftruncate(fd, sizeof(kv_info)+sizeof(char));
     // printf("does this reach");
-    my_sem = sem_open("/semHQ",O_CREAT | O_RDWR, S_IRWXU, 1);
+    my_sem = sem_open(__KV_WRITERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
     sem_wait(my_sem);
     
     //this is the critical section
@@ -129,7 +129,7 @@ char *kv_store_read(char *key){
     char *valueToReturn;
     int found = 0;
 
-    my_sem = sem_open("/semHQ",O_CREAT | O_RDWR, S_IRWXU, 1);
+    my_sem = sem_open(__KV_WRITERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
     sem_wait(my_sem);
 
     int podIndex = hash(key) % 128;
@@ -180,7 +180,7 @@ char **kv_store_read_all(char *key){
     char *valueToReturn;
     int found = 0;
     int count = 0;
-    my_sem = sem_open("/semHQ",O_CREAT | O_RDWR, S_IRWXU, 1);
+    my_sem = sem_open(__KV_WRITERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
     sem_wait(my_sem);
 
     int podIndex = hash(key) % 128;
