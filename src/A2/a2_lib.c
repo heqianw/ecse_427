@@ -70,7 +70,8 @@ int kv_store_create(char *name){
 }
 
 int kv_store_write(char *key, char *value){
-    
+    int i;
+    int keyExists = 0;
     int fd = shm_open(shmname, O_RDWR, S_IRWXU);
     if (fd < 0){
        printf("Failed to write to KV \n");
@@ -87,12 +88,41 @@ int kv_store_write(char *key, char *value){
     int podIndex = hash(key) % 128;
     pod *actualPod = & (this_kv_info -> pods[podIndex]);
     int actualIndex = (actualPod -> index);
-    kv_pair *actualPair = & (actualPod -> kv_pairs[actualIndex]);
+
+    kv_pair *actualPair = NULL;
+    //have to check if key actually exists
+    for(i = 0; i < actualIndex; i++){
+        kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
+        char *storedKey = (currentPair -> key);
+        if(strcmp(key, storedKey) == 0){
+           keyExists = 1;
+           actualPair = & (actualPod -> kv_pairs[i]);
+        }
+    }
+
+    //if we cant the existing key within the pod; then 
+    if(keyExists == 0)
+        actualPair = & (actualPod -> kv_pairs[actualIndex]);
+  
+    int writeIndex = (actualPair -> writeIndex);
+    int numberValues = (actualPair -> numberValues);
+    if(numberValues <= MAXNUMBERVALUES){
+        numberValues++;
+        actualPair -> numberValues = numberValues;
+    }
     
     memcpy(&actualPair -> key, key, strlen(key));
-    memcpy(&actualPair -> value, value , strlen(value) + 1);
+    memcpy(&actualPair -> value[writeIndex], value , strlen(value) + 1);
+    // memcpy(&actualPair -> writeIndex, writeIndex , strlen(writeIndex));
+    writeIndex++;
+    if(writeIndex >= 8)
+        writeIndex = writeIndex % 8;
+    printf("Write index is %d\n", writeIndex);
+    actualPair -> writeIndex = writeIndex;
 
-    actualIndex++;
+    if(keyExists == 0){
+        actualIndex++;
+    }
     if(actualIndex > 127){
         actualPod -> index = actualIndex % 128;    
     }
@@ -105,7 +135,7 @@ int kv_store_write(char *key, char *value){
     sem_post(my_sem);
 
     printf("Pod number %d \n", podIndex);
-    printf("Index of pod is %d\n", actualIndex);
+    printf("Index of kvPair is %d\n", actualIndex);
     // find a way to update the index
     
     munmap(this_kv_info, sizeof(kv_info));
@@ -142,8 +172,16 @@ char *kv_store_read(char *key){
         kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
         char *storedKey = (currentPair -> key);
         if(strcmp(key, storedKey) == 0){
-            valueToReturn = strdup((currentPair -> value));
+            int readIndex = (currentPair -> readIndex);
+            printf("Read Index is %d\n", readIndex);
+            valueToReturn = strdup((currentPair -> value[readIndex]));
             found = 1;
+            readIndex++;
+            printf("NumberValues is %d\n ", currentPair -> numberValues);
+            if(readIndex >= currentPair -> numberValues){
+                readIndex = readIndex % currentPair -> numberValues;
+            }
+            currentPair -> readIndex = readIndex;
         }
     }
     printf("Found is %d\n", found);
@@ -176,7 +214,7 @@ char **kv_store_read_all(char *key){
     ftruncate(fd, sizeof(kv_info) + sizeof(char));
 
     // printf("does this reach");
-    int i;
+    int i,j;
     char *valueToReturn;
     int found = 0;
     int count = 0;
@@ -192,9 +230,11 @@ char **kv_store_read_all(char *key){
         kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
         char *storedKey = (currentPair -> key);
         if(strcmp(key, storedKey) == 0){ 
-            allValues[count] = strdup((currentPair -> value));
-            count++;
-            found = 1;
+            for(j = 0; j < currentPair -> numberValues; j++){
+                allValues[count] = strdup((currentPair -> value[j]));
+                count++;
+                found = 1;
+            }
         }
     }
     //create 2D char array for the number of values, then loop to add to this 2D char array
@@ -215,18 +255,19 @@ int main (int argc, char **argv){
     // printf("create");
     kv_store_create(argv[1]);
     // kv_store_write(argv[2], argv[3]);
-    char *result = kv_store_read(argv[2]);
+    // char *result = kv_store_read(argv[2]);
     
-    if(result)
-        printf("%s\n", result);
-    else
-        printf("Key doesn't exist\n");
-    // char **values = kv_store_read_all("Key");
+    // if(result)
+    //     printf("%s\n", result);
+    // else
+    //     printf("Key doesn't exist\n");
+    
+    char **values = kv_store_read_all(argv[2]);
     // int i = 0;
-    // // // while(*values){
-    // // //     printf( "%s\n", *values++ );
-    // // // }
-    // for(i = 0; i < 5; i++){
+    // // while(*values){
+    // //     printf( "%s\n", *values++ );
+    // // }
+    // for(i = 0; i < 8; i++){
     //     printf("%s\n", values[i]);
     // }
 }

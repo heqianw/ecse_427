@@ -13,11 +13,15 @@
 #include <semaphore.h>
 
 #define __KV_WRITERS_SEMAPHORE__	"WRITER_HQ_WANG_260688073"
-
+#define NUMBERPODS	128
+#define MAXNUMBERVALUES	8
 
 typedef struct kv_pair{
+    int readIndex;
+    int writeIndex;
+    int numberValues;
     char key[32];
-    char value[256];
+    char value[MAXNUMBERVALUES][256];
 } kv_pair;
 
 typedef struct pod{
@@ -27,7 +31,7 @@ typedef struct pod{
 
 typedef struct kv_info{
     char *kv_name;
-    pod pods[128];
+    pod pods[NUMBERPODS];
 } kv_info;
 
 int  kv_store_create(char *name);
