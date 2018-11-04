@@ -135,7 +135,6 @@ char *kv_store_read(char *key){
     pod *actualPod = & (this_kv_info -> pods[podIndex]);
     int numberEntries = (actualPod -> index);
     
-
     // printf("The pod number is %d\n", podIndex);
     for(i = 0; i < numberEntries; i++){
         kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
@@ -168,9 +167,9 @@ char *kv_store_read(char *key){
 
 // instead of doing what we did earlier and compare the key, if hash function has same thing, just return all values in a char array
 char **kv_store_read_all(char *key){
-
-    char **allValues = malloc(sizeof(char*));
     
+    // char **allValues = malloc(sizeof(char*));
+    char **allValues = calloc(1, sizeof(char **));
     int fd = shm_open(__KV_SHM_NAME__, O_RDWR, S_IRWXU);
     if (fd < 0){
        printf("Failed to write to KV \n");
@@ -178,9 +177,7 @@ char **kv_store_read_all(char *key){
     }
 
     this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    ftruncate(fd, sizeof(kv_info) + sizeof(char));
-
-    // printf("does this reach");
+    ftruncate(fd, sizeof(kv_info));
     int i,j;
     char *valueToReturn;
     int found = 0;
@@ -191,7 +188,6 @@ char **kv_store_read_all(char *key){
     int podIndex = hash(key) % 128;
     pod *actualPod = & (this_kv_info -> pods[podIndex]);
     int numberEntries = (actualPod -> index);
-    
     //loop to tell us how many values for key
     for(i = 0; i < numberEntries; i++){
         kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
@@ -204,13 +200,14 @@ char **kv_store_read_all(char *key){
             }
         }
     }
+    
     //create 2D char array for the number of values, then loop to add to this 2D char array
-
+    printf("Error happens after here\n");
     sem_post(my_sem_read);
-    sem_close(my_sem_read);
+    //error inside close
+    // sem_close(my_sem_read);
     munmap(this_kv_info, sizeof(kv_info));
     close(fd);
-    
     if(found == 1){
         return allValues;
     }

@@ -6,8 +6,12 @@
 
 void kill_shared_mem(){
     //In case it already exists
-    sem_unlink(__TEST_SHARED_SEM_NAME__);
     shm_unlink(__TEST_SHARED_MEM_NAME__);
+}
+
+void kv_delete_db() {
+	kill_shared_mem();
+	sem_unlink(__TEST_SHARED_SEM_NAME__);
 }
 
 void intHandler(int dummy) {
@@ -45,12 +49,12 @@ int main(){
         temp_flag = -1;
         write_count = 0;
         memset(pids, -1, __TEST_FORK_NUM__ * sizeof(int));
-
         max_write = (rand()) % __TEST_MAX_POD_ENTRY__/2 + __TEST_MAX_POD_ENTRY__/2;
         for(int j = 0; j < __TEST_FORK_NUM__; j++){
             write_table[j] = max_write/__TEST_FORK_NUM__ - rand() % 5;
             write_count += write_table[j];
         }
+        
         generate_string(key, __TEST_MAX_KEY_SIZE__);
         int child_num;
         for(child_num = 0; child_num < __TEST_FORK_NUM__; child_num++){
@@ -91,8 +95,15 @@ int main(){
             sem_close(open_sem_lock);
             exit(0);
         }
+
+        //error inside the kv_store_read_all
+        // printf("This reaches\n");
         //At this point we read all values  
+        //we have an issue with read_all
         read_all = kv_store_read_all(key);
+        // printf("This reaches\n");
+        
+        
         if(read_all == NULL){
             printf("Error! Read failed\n");
             errors++;
@@ -106,16 +117,19 @@ int main(){
                 temp_flag++;
             }
         }
+        
         if(temp_flag != write_count){
             printf("Error! Invalid number of reads. Should be %d but only received %d\n", write_count, temp_flag);
             errors++;
         }
-
+        //free creates a seg fault for this issue
         for(int i = 0; i < temp_flag; i++){
             free(read_all[i]);
         }
+        
         free(read_all);
         kv_delete_db();
+        
     }
     sem_close(open_sem_lock);
     sem_unlink(__TEST_SHARED_SEM_NAME__);
