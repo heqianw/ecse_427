@@ -12,9 +12,10 @@
 
 #include <semaphore.h>
 
-#define __KV_WRITERS_SEMAPHORE__	"WRITER_HQ_WANG_260688073"
+#define __TEST_SHARED_MEM_NAME__ "/HQWANG_260688073"
+#define __KV_WRITERS_SEMAPHORE__	"/WRITER_HQ_WANG_260688073"
 #define NUMBERPODS	128
-#define MAXNUMBERVALUES	8
+#define MAXNUMBERVALUES	256
 
 typedef struct kv_pair{
     int readIndex;
