@@ -11,7 +11,8 @@ int kv_store_create(char *name);
 int kv_store_write(char *key, char *value);
 char *kv_store_read(char *key);
 char **kv_store_read_all(char *key);
-sem_t *my_sem;
+sem_t *my_sem_write;
+sem_t *my_sem_read;
 
 kv_info *this_kv_info;
 char *shmname;
@@ -55,8 +56,8 @@ int kv_store_write(char *key, char *value){
     this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     ftruncate(fd, sizeof(kv_info)+sizeof(char));
     // printf("does this reach");
-    my_sem = sem_open(__KV_WRITERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
-    sem_wait(my_sem);
+    my_sem_write = sem_open(__KV_WRITERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
+    sem_wait(my_sem_write);
     
     //this is the critical section
     int podIndex = hash(key) % 128;
@@ -104,8 +105,8 @@ int kv_store_write(char *key, char *value){
         actualPod -> index = actualIndex;
     }
 
-    sem_post(my_sem);
-    sem_close(my_sem);
+    sem_post(my_sem_write);
+    sem_close(my_sem_write);
     munmap(this_kv_info, sizeof(kv_info));
     close(fd);
     return 0;
@@ -127,8 +128,8 @@ char *kv_store_read(char *key){
     char *valueToReturn;
     int found = 0;
 
-    my_sem = sem_open(__KV_WRITERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
-    sem_wait(my_sem);
+    my_sem_read = sem_open(__KV_READERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
+    sem_wait(my_sem_read);
 
     int podIndex = hash(key) % 128;
     pod *actualPod = & (this_kv_info -> pods[podIndex]);
@@ -152,8 +153,8 @@ char *kv_store_read(char *key){
             currentPair -> readIndex = readIndex;
         }
     }
-    sem_post(my_sem);
-    sem_close(my_sem);
+    sem_post(my_sem_read);
+    sem_close(my_sem_read);
     munmap(this_kv_info, sizeof(kv_info));
     close(fd);
     
@@ -184,8 +185,8 @@ char **kv_store_read_all(char *key){
     char *valueToReturn;
     int found = 0;
     int count = 0;
-    my_sem = sem_open(__KV_WRITERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
-    sem_wait(my_sem);
+    my_sem_read = sem_open(__KV_READERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
+    sem_wait(my_sem_read);
 
     int podIndex = hash(key) % 128;
     pod *actualPod = & (this_kv_info -> pods[podIndex]);
@@ -205,8 +206,8 @@ char **kv_store_read_all(char *key){
     }
     //create 2D char array for the number of values, then loop to add to this 2D char array
 
-    sem_post(my_sem);
-    sem_close(my_sem);
+    sem_post(my_sem_read);
+    sem_close(my_sem_read);
     munmap(this_kv_info, sizeof(kv_info));
     close(fd);
     
