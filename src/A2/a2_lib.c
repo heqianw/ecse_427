@@ -168,32 +168,48 @@ char *kv_store_read(char *key){
 // instead of doing what we did earlier and compare the key, if hash function has same thing, just return all values in a char array
 char **kv_store_read_all(char *key){
     
-    // char **allValues = malloc(sizeof(char*));
-    char **allValues = calloc(1, sizeof(char **));
+    // char **allValues = malloc((MAXNUMBERVALUES + 1) * sizeof(char*));
+    // char **allValues = (char**) malloc(sizeof(char *) * (MAXNUMBERVALUES + 1));
     int fd = shm_open(__KV_SHM_NAME__, O_RDWR, S_IRWXU);
     if (fd < 0){
        printf("Failed to write to KV \n");
        return NULL;
     }
 
+    my_sem_read = sem_open(__KV_READERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
+    sem_wait(my_sem_read);
+    
     this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     ftruncate(fd, sizeof(kv_info));
     int i,j;
     char *valueToReturn;
     int found = 0;
     int count = 0;
-    my_sem_read = sem_open(__KV_READERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
-    sem_wait(my_sem_read);
+    
 
     int podIndex = hash(key) % 128;
     pod *actualPod = & (this_kv_info -> pods[podIndex]);
     int numberEntries = (actualPod -> index);
+
+    int numberValues;
+    
+    for(i = 0; i < numberEntries; i++){
+        kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
+        char *storedKey = (currentPair -> key);
+        if(strcmp(key, storedKey) == 0){ 
+            numberValues = currentPair -> numberValues;
+        }
+    }
+    
+    char **allValues = malloc(numberValues * 256);
+
     //loop to tell us how many values for key
     for(i = 0; i < numberEntries; i++){
         kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
         char *storedKey = (currentPair -> key);
         if(strcmp(key, storedKey) == 0){ 
             for(j = 0; j < currentPair -> numberValues; j++){
+                // allValues[count] = malloc(sizeof(char) * (strlen(currentPair -> value[j]) + 1));
                 allValues[count] = strdup((currentPair -> value[j]));
                 count++;
                 found = 1;
@@ -202,7 +218,7 @@ char **kv_store_read_all(char *key){
     }
     
     //create 2D char array for the number of values, then loop to add to this 2D char array
-    printf("Error happens after here\n");
+    // printf("Error happens after here\n");
     sem_post(my_sem_read);
     //error inside close
     // sem_close(my_sem_read);
