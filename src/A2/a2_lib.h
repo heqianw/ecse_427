@@ -12,9 +12,12 @@
 
 #include <semaphore.h>
 
-#define __KV_WRITERS_SEMAPHORE__	"WRITER_HQ_WANG_260688073"
+#define __KV_WRITERS_SEMAPHORE__	"/WRITER_HQ_WANG_260688073"
+#define __KV_READERS_SEMAPHORE__	"/READER_HQ_WANG_260688073"
+#define __KV_SHM_NAME__	            "/SHMNAME_HQ_WANG_260688073"
 #define NUMBERPODS	128
-#define MAXNUMBERVALUES	8
+#define NUMBERKVPAIR	128
+#define MAXNUMBERVALUES	4
 
 typedef struct kv_pair{
     int readIndex;
@@ -26,7 +29,7 @@ typedef struct kv_pair{
 
 typedef struct pod{
     int index;
-    kv_pair kv_pairs[128];
+    kv_pair kv_pairs[NUMBERKVPAIR];
 } pod;
 
 typedef struct kv_info{

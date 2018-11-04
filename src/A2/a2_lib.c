@@ -13,23 +13,6 @@ char *kv_store_read(char *key);
 char **kv_store_read_all(char *key);
 sem_t *my_sem;
 
-//array of pods
-//curr pair key/values
-// typedef struct kv_pair{
-//     char key[32];
-//     char value[256];
-// } kv_pair;
-
-// typedef struct pod{
-//     int index;
-//     kv_pair kv_pairs[128];
-// } pod;
-
-// typedef struct kv_info{
-//     char *kv_name;
-//     pod pods[128];
-// } kv_info;
-
 kv_info *this_kv_info;
 char *shmname;
 
@@ -42,18 +25,9 @@ unsigned long hash(unsigned char *str){
     return (hash > 0) ? hash : -(hash);
 }
 
-// unsigned long hash(unsigned char *str){
-//     unsigned long hash = 5381;
-//     int c;
-
-//     while(c = *str++)
-//         hash = c + ((hash << 5) + hash);
-//     return (hash > 0) ? hash : -(hash);
-// }
-
 int kv_store_create(char *name){
     // create the kv at the designated name
-    int fd = shm_open(name, O_CREAT | O_RDWR, S_IRWXU);
+    int fd = shm_open(__KV_SHM_NAME__, O_CREAT | O_RDWR, S_IRWXU);
     
     if (fd < 0){
        printf("Failed to create a KV");
@@ -72,7 +46,7 @@ int kv_store_create(char *name){
 int kv_store_write(char *key, char *value){
     int i;
     int keyExists = 0;
-    int fd = shm_open(shmname, O_RDWR, S_IRWXU);
+    int fd = shm_open(__KV_SHM_NAME__, O_RDWR, S_IRWXU);
     if (fd < 0){
        printf("Failed to write to KV \n");
        return -1;
@@ -117,7 +91,7 @@ int kv_store_write(char *key, char *value){
     writeIndex++;
     if(writeIndex >= 8)
         writeIndex = writeIndex % 8;
-    printf("Write index is %d\n", writeIndex);
+    // printf("Write index is %d\n", writeIndex);
     actualPair -> writeIndex = writeIndex;
 
     if(keyExists == 0){
@@ -129,15 +103,9 @@ int kv_store_write(char *key, char *value){
     else{
         actualPod -> index = actualIndex;
     }
-    // end of critical section
-    // actualPod -> index = (int)
 
     sem_post(my_sem);
-
-    printf("Pod number %d \n", podIndex);
-    printf("Index of kvPair is %d\n", actualIndex);
-    // find a way to update the index
-    
+    sem_close(my_sem);
     munmap(this_kv_info, sizeof(kv_info));
     close(fd);
     return 0;
@@ -145,7 +113,7 @@ int kv_store_write(char *key, char *value){
 
 //once we compute hash and we get to the hash, parse the list of values for the key that we want, by doing key equality
 char *kv_store_read(char *key){
-    int fd = shm_open(shmname, O_RDWR, S_IRWXU);
+    int fd = shm_open(__KV_SHM_NAME__, O_RDWR, S_IRWXU);
     if (fd < 0){
        printf("Failed to write to KV \n");
        return NULL;
@@ -167,27 +135,25 @@ char *kv_store_read(char *key){
     int numberEntries = (actualPod -> index);
     
 
-    printf("The pod number is %d\n", podIndex);
+    // printf("The pod number is %d\n", podIndex);
     for(i = 0; i < numberEntries; i++){
         kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
         char *storedKey = (currentPair -> key);
         if(strcmp(key, storedKey) == 0){
             int readIndex = (currentPair -> readIndex);
-            printf("Read Index is %d\n", readIndex);
+            // printf("Read Index is %d\n", readIndex);
             valueToReturn = strdup((currentPair -> value[readIndex]));
             found = 1;
             readIndex++;
-            printf("NumberValues is %d\n ", currentPair -> numberValues);
+            // printf("NumberValues is %d\n ", currentPair -> numberValues);
             if(readIndex >= currentPair -> numberValues){
                 readIndex = readIndex % currentPair -> numberValues;
             }
             currentPair -> readIndex = readIndex;
         }
     }
-    printf("Found is %d\n", found);
-    // if(valueToReturn)
-        // printf("Value Return is %s\n", valueToReturn);
     sem_post(my_sem);
+    sem_close(my_sem);
     munmap(this_kv_info, sizeof(kv_info));
     close(fd);
     
@@ -204,7 +170,7 @@ char **kv_store_read_all(char *key){
 
     char **allValues = malloc(sizeof(char*));
     
-    int fd = shm_open(shmname, O_RDWR, S_IRWXU);
+    int fd = shm_open(__KV_SHM_NAME__, O_RDWR, S_IRWXU);
     if (fd < 0){
        printf("Failed to write to KV \n");
        return NULL;
@@ -240,6 +206,7 @@ char **kv_store_read_all(char *key){
     //create 2D char array for the number of values, then loop to add to this 2D char array
 
     sem_post(my_sem);
+    sem_close(my_sem);
     munmap(this_kv_info, sizeof(kv_info));
     close(fd);
     
@@ -249,25 +216,4 @@ char **kv_store_read_all(char *key){
     else{
         return NULL;
     }
-}
-
-int main (int argc, char **argv){
-    // printf("create");
-    kv_store_create(argv[1]);
-    // kv_store_write(argv[2], argv[3]);
-    // char *result = kv_store_read(argv[2]);
-    
-    // if(result)
-    //     printf("%s\n", result);
-    // else
-    //     printf("Key doesn't exist\n");
-    
-    char **values = kv_store_read_all(argv[2]);
-    // int i = 0;
-    // // while(*values){
-    // //     printf( "%s\n", *values++ );
-    // // }
-    // for(i = 0; i < 8; i++){
-    //     printf("%s\n", values[i]);
-    // }
 }
