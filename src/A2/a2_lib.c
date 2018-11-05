@@ -45,6 +45,14 @@ int kv_store_create(char *name){
 }
 
 int kv_store_write(char *key, char *value){
+
+    if(strlen(key) > 32){
+        *(key + 32) = '\0';
+    }
+    if(strlen(value) > 256){
+        *(value + 256) = '\0';
+    }
+
     int i;
     int keyExists = 0;
     int fd = shm_open(__KV_SHM_NAME__, O_RDWR, S_IRWXU);
@@ -55,12 +63,12 @@ int kv_store_write(char *key, char *value){
 
     this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     ftruncate(fd, sizeof(kv_info)+sizeof(char));
-    // printf("does this reach");
+
     my_sem_write = sem_open(__KV_WRITERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
     sem_wait(my_sem_write);
     
     //this is the critical section
-    int podIndex = hash(key) % 128;
+    int podIndex = hash(key) % NUMBERPODS;
     pod *actualPod = & (this_kv_info -> pods[podIndex]);
     int actualIndex = (actualPod -> index);
 
@@ -81,6 +89,7 @@ int kv_store_write(char *key, char *value){
   
     int writeIndex = (actualPair -> writeIndex);
     int numberValues = (actualPair -> numberValues);
+
     if(numberValues <= MAXNUMBERVALUES){
         numberValues++;
         actualPair -> numberValues = numberValues;
@@ -88,18 +97,18 @@ int kv_store_write(char *key, char *value){
     
     memcpy(&actualPair -> key, key, strlen(key));
     memcpy(&actualPair -> value[writeIndex], value , strlen(value) + 1);
-    // memcpy(&actualPair -> writeIndex, writeIndex , strlen(writeIndex));
+
     writeIndex++;
-    if(writeIndex >= 8)
-        writeIndex = writeIndex % 8;
-    // printf("Write index is %d\n", writeIndex);
+    if(writeIndex >= MAXNUMBERVALUES)
+        writeIndex = writeIndex % MAXNUMBERVALUES;
+
     actualPair -> writeIndex = writeIndex;
 
     if(keyExists == 0){
         actualIndex++;
     }
-    if(actualIndex > 127){
-        actualPod -> index = actualIndex % 128;    
+    if(actualIndex >= NUMBERKVPAIR){
+        actualPod -> index = actualIndex % NUMBERKVPAIR;    
     }
     else{
         actualPod -> index = actualIndex;
@@ -122,8 +131,6 @@ char *kv_store_read(char *key){
 
     this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     ftruncate(fd, sizeof(kv_info) + sizeof(char));
-
-    // printf("does this reach");
     int i;
     char *valueToReturn;
     int found = 0;
@@ -131,21 +138,18 @@ char *kv_store_read(char *key){
     my_sem_read = sem_open(__KV_READERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
     sem_wait(my_sem_read);
 
-    int podIndex = hash(key) % 128;
+    int podIndex = hash(key) % NUMBERPODS;
     pod *actualPod = & (this_kv_info -> pods[podIndex]);
     int numberEntries = (actualPod -> index);
     
-    // printf("The pod number is %d\n", podIndex);
     for(i = 0; i < numberEntries; i++){
         kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
         char *storedKey = (currentPair -> key);
         if(strcmp(key, storedKey) == 0){
             int readIndex = (currentPair -> readIndex);
-            // printf("Read Index is %d\n", readIndex);
             valueToReturn = strdup((currentPair -> value[readIndex]));
             found = 1;
             readIndex++;
-            // printf("NumberValues is %d\n ", currentPair -> numberValues);
             if(readIndex >= currentPair -> numberValues){
                 readIndex = readIndex % currentPair -> numberValues;
             }
@@ -165,11 +169,10 @@ char *kv_store_read(char *key){
     }
 }
 
+/*
 // instead of doing what we did earlier and compare the key, if hash function has same thing, just return all values in a char array
 char **kv_store_read_all(char *key){
-    
-    // char **allValues = malloc((MAXNUMBERVALUES + 1) * sizeof(char*));
-    // char **allValues = (char**) malloc(sizeof(char *) * (MAXNUMBERVALUES + 1));
+
     int fd = shm_open(__KV_SHM_NAME__, O_RDWR, S_IRWXU);
     if (fd < 0){
        printf("Failed to write to KV \n");
@@ -186,8 +189,7 @@ char **kv_store_read_all(char *key){
     int found = 0;
     int count = 0;
     
-
-    int podIndex = hash(key) % 128;
+    int podIndex = hash(key) % NUMBERPODS;
     pod *actualPod = & (this_kv_info -> pods[podIndex]);
     int numberEntries = (actualPod -> index);
 
@@ -198,10 +200,11 @@ char **kv_store_read_all(char *key){
         char *storedKey = (currentPair -> key);
         if(strcmp(key, storedKey) == 0){ 
             numberValues = currentPair -> numberValues;
+            break;
         }
     }
     
-    char **allValues = malloc(numberValues * 256);
+    char **allValues = malloc((numberValues + 1) * sizeof(char *));
 
     //loop to tell us how many values for key
     for(i = 0; i < numberEntries; i++){
@@ -209,11 +212,13 @@ char **kv_store_read_all(char *key){
         char *storedKey = (currentPair -> key);
         if(strcmp(key, storedKey) == 0){ 
             for(j = 0; j < currentPair -> numberValues; j++){
-                // allValues[count] = malloc(sizeof(char) * (strlen(currentPair -> value[j]) + 1));
-                allValues[count] = strdup((currentPair -> value[j]));
-                count++;
+                // allValues[j] = malloc(sizeof(char) * (strlen(currentPair -> value[j]) + 1));
+                allValues[j] = strdup((currentPair -> value[j]));
+                // strcpy(allValues[j], (currentPair -> value[j]));
+                // count++;
                 found = 1;
             }
+            break;
         }
     }
     
@@ -221,9 +226,84 @@ char **kv_store_read_all(char *key){
     // printf("Error happens after here\n");
     sem_post(my_sem_read);
     //error inside close
-    // sem_close(my_sem_read);
+    sem_close(my_sem_read);
     munmap(this_kv_info, sizeof(kv_info));
     close(fd);
+    if(found == 1){
+        return allValues;
+    }
+    else{
+        return NULL;
+    }
+}
+*/
+/*
+//we can call read repetitively, since read will read all values inside the kv-pair
+char ** kv_store_read_all(char *key){
+	int podIndex = hash(key) % NUMBERPODS;
+	char** allValues = malloc(sizeof(char*) * MAXNUMBERVALUES);
+	char* value;
+	int index = 0;
+		while(1){
+			if(index == 0){
+				value = kv_store_read(key);
+				allValues[index] = value;
+			}
+			else{
+				allValues[index] = kv_store_read(key);
+			}
+			index++;	
+			if (value == NULL){
+				return NULL;
+			}
+			else if (index != 1 && strcmp(value, allValues[index - 1]) == 0){
+				allValues[index - 1] = NULL;
+				return allValues;
+			}			
+		}
+		return NULL;
+} 
+*/
+
+
+char ** kv_store_read_all(char *key){
+	char** allValues = calloc((MAXNUMBERVALUES + 1), sizeof(char*));
+
+	int fd = shm_open(__KV_SHM_NAME__, O_RDWR, S_IRWXU);
+    if (fd < 0){
+       printf("Failed to write to KV \n");
+       return NULL;
+    }
+
+    this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    ftruncate(fd, sizeof(kv_info) + sizeof(char));
+    int i;
+    int j;
+    int found = 0;
+
+    my_sem_read = sem_open(__KV_READERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
+    sem_wait(my_sem_read);
+
+    int podIndex = hash(key) % NUMBERPODS;
+    pod *actualPod = & (this_kv_info -> pods[podIndex]);
+    int numberEntries = (actualPod -> index);
+    
+    for(i = 0; i < numberEntries; i++){
+        kv_pair *currentPair = &(actualPod -> kv_pairs[i]);
+        char *storedKey = (currentPair -> key);
+        if(strcmp(key, storedKey) == 0){
+            for(j = 0; j < (currentPair -> numberValues); j++){
+                allValues[j] = strdup((currentPair -> value[j]));
+            }
+            found = 1;
+            break;
+        }
+    }
+    sem_post(my_sem_read);
+    sem_close(my_sem_read);
+    munmap(this_kv_info, sizeof(kv_info));
+    close(fd);
+    
     if(found == 1){
         return allValues;
     }

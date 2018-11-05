@@ -15,9 +15,9 @@
 #define __KV_WRITERS_SEMAPHORE__	"/WRITER_HQ_WANG_260688073"
 #define __KV_READERS_SEMAPHORE__	"/READER_HQ_WANG_260688073"
 #define __KV_SHM_NAME__	            "/SHMNAME_HQ_WANG_260688073"
-#define NUMBERPODS	128
-#define NUMBERKVPAIR	128
-#define MAXNUMBERVALUES	4
+#define NUMBERPODS	512
+#define NUMBERKVPAIR	5
+#define MAXNUMBERVALUES	256
 
 typedef struct kv_pair{
     int readIndex;
