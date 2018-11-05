@@ -34,6 +34,7 @@ typedef struct pod{
 
 typedef struct kv_info{
     char *kv_name;
+    int readCount;
     pod pods[NUMBERPODS];
 } kv_info;
 

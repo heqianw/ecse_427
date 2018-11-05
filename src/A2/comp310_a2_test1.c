@@ -205,7 +205,6 @@ void read_all_test(char ** keys_buf, char *** data_buf,
         }
         for(int k = 0; k < total_read; k++){
             //there is an error in my readAll, somehow the alloc doesn't get me all my values
-            // printf("%d\n", k);
             free(read_all[k]);
         }
         free(read_all);

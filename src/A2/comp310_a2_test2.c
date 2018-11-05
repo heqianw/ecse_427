@@ -6,12 +6,15 @@
 
 void kill_shared_mem(){
     //In case it already exists
+    sem_unlink(__TEST_SHARED_SEM_NAME__);
     shm_unlink(__TEST_SHARED_MEM_NAME__);
 }
 
 void kv_delete_db() {
-	kill_shared_mem();
-	sem_unlink(__TEST_SHARED_SEM_NAME__);
+//	kill_shared_mem();
+	    shm_unlink(__TEST_SHARED_MEM_NAME__);    	
+        sem_unlink(__KV_WRITERS_SEMAPHORE__);
+    	sem_unlink(__KV_READERS_SEMAPHORE__);
 }
 
 void intHandler(int dummy) {

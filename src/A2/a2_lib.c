@@ -63,7 +63,7 @@ int kv_store_write(char *key, char *value){
 
     this_kv_info = mmap(NULL, sizeof(kv_info), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     ftruncate(fd, sizeof(kv_info)+sizeof(char));
-
+    
     my_sem_write = sem_open(__KV_WRITERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
     sem_wait(my_sem_write);
     
@@ -135,8 +135,16 @@ char *kv_store_read(char *key){
     char *valueToReturn;
     int found = 0;
 
+   
     my_sem_read = sem_open(__KV_READERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
+    my_sem_write = sem_open(__KV_WRITERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
     sem_wait(my_sem_read);
+
+    (this_kv_info -> readCount)++;
+    if((this_kv_info -> readCount) == 1){
+        sem_wait(my_sem_write);
+    }
+    sem_post(my_sem_read);
 
     int podIndex = hash(key) % NUMBERPODS;
     pod *actualPod = & (this_kv_info -> pods[podIndex]);
@@ -156,8 +164,17 @@ char *kv_store_read(char *key){
             currentPair -> readIndex = readIndex;
         }
     }
+
+    sem_wait(my_sem_read);
+    (this_kv_info -> readCount)--;
+    
+    if((this_kv_info -> readCount) == 0){
+        sem_post(my_sem_write);
+    }
     sem_post(my_sem_read);
     sem_close(my_sem_read);
+    sem_close(my_sem_write);
+
     munmap(this_kv_info, sizeof(kv_info));
     close(fd);
     
@@ -185,7 +202,14 @@ char ** kv_store_read_all(char *key){
     int found = 0;
 
     my_sem_read = sem_open(__KV_READERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
+    my_sem_write = sem_open(__KV_WRITERS_SEMAPHORE__,O_CREAT | O_RDWR, S_IRWXU, 1);
     sem_wait(my_sem_read);
+
+    (this_kv_info -> readCount)++;
+    if((this_kv_info -> readCount) == 1){
+        sem_wait(my_sem_write);
+    }
+    sem_post(my_sem_read);
 
     int podIndex = hash(key) % NUMBERPODS;
     pod *actualPod = & (this_kv_info -> pods[podIndex]);
@@ -202,8 +226,17 @@ char ** kv_store_read_all(char *key){
             break;
         }
     }
+
+    sem_wait(my_sem_read);
+    (this_kv_info -> readCount)--;
+    
+    if((this_kv_info -> readCount) == 0){
+        sem_post(my_sem_write);
+    }
     sem_post(my_sem_read);
     sem_close(my_sem_read);
+    sem_close(my_sem_write);
+
     munmap(this_kv_info, sizeof(kv_info));
     close(fd);
     
