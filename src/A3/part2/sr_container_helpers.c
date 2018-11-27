@@ -9,6 +9,7 @@
  *                  No other changes are needed to this file
 */
 #include "sr_container.h"
+#include <unistd.h>
 
 int switch_child_root(const char *new_root, const char *put_old)
 {
@@ -18,8 +19,8 @@ int switch_child_root(const char *new_root, const char *put_old)
      *  Simply use the "pivot_root()" system call to switch child's root to the new root
      *  ------------------------------------------------------
      * */ 
-    int result = pivot_root(new_root, put_old);
-    if(result == -1){
+
+    if(pivot_root(new_root, put_old) == -1){
         printf("The pivot root failed.\n");
         return -1;
     }
