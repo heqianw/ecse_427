@@ -331,6 +331,16 @@ int main(int argc, char **argv)
 
         // You code for clone() goes here
 
+    void *pchild_stack = malloc(1024 * 1024);
+    if ( pchild_stack == NULL ) {
+        printf("ERROR: Unable to allocate memory.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    child_pid = clone(child_function, pchild_stack + (1024 * 1024), SIGCHLD | CLONE_NEWNET | 
+    CLONE_NEWCGROUP | CLONE_NEWPID | CLONE_NEWIPC | CLONE_NEWNS | CLONE_NEWUTS, argv[1]);
+
+
     /**
      *  ------------------------------------------------------
      **/ 
