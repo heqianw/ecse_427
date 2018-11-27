@@ -41,6 +41,55 @@ struct cgroups_control *cgroups[5] = {
 			NULL                       // NULL at the end of the array
 		}
 	},
+
+    & (struct cgroups_control) {
+		.control = CGRP_MEMORY_CONTROL,
+		.settings = (struct cgroup_setting *[]) {
+			& (struct cgroup_setting) {
+				.name = "blkio.weight",
+				.value = "64"
+			},
+			&self_to_task,             // must be added to all the new controls added
+			NULL                       // NULL at the end of the array
+		}
+	},
+
+    & (struct cgroups_control) {
+		.control = CGRP_CPU_CONTROL,
+		.settings = (struct cgroup_setting *[]) {
+			& (struct cgroup_setting) {
+				.name = "blkio.weight",
+				.value = "64"
+			},
+			&self_to_task,             // must be added to all the new controls added
+			NULL                       // NULL at the end of the array
+		}
+	},
+
+    & (struct cgroups_control) {
+		.control = CGRP_CPU_SET_CONTROL,
+		.settings = (struct cgroup_setting *[]) {
+			& (struct cgroup_setting) {
+				.name = "blkio.weight",
+				.value = "64"
+			},
+			&self_to_task,             // must be added to all the new controls added
+			NULL                       // NULL at the end of the array
+		}
+	},
+
+    & (struct cgroups_control) {
+		.control = CGRP_PIDS_CONTROL,
+		.settings = (struct cgroup_setting *[]) {
+			& (struct cgroup_setting) {
+				.name = "blkio.weight",
+				.value = "64"
+			},
+			&self_to_task,             // must be added to all the new controls added
+			NULL                       // NULL at the end of the array
+		}
+	},
+
 	NULL                               // NULL at the end of the array
 };
 
@@ -177,7 +226,7 @@ int main(int argc, char **argv)
 		        }
 	        },
 	        NULL         
-            break;
+            break;cgroups
 
         case 'w':
             & (struct cgroups_control) {
