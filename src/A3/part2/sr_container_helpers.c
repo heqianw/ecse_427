@@ -12,11 +12,21 @@
 
 int switch_child_root(const char *new_root, const char *put_old)
 {
+    
     /**
      *  ------------------------ TODO ------------------------
      *  Simply use the "pivot_root()" system call to switch child's root to the new root
      *  ------------------------------------------------------
      * */ 
+    int result = pivot_root(new_root, put_old);
+    if(result == -1){
+        printf("The pivot root failed.\n");
+        return -1;
+    }
+    if(chdir("/") == -1){
+        printf("Unable to change directory.\n");
+        return -1;
+    }
     return 0;
 }
 
