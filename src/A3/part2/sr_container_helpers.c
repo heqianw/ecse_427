@@ -100,6 +100,65 @@ int setup_child_capabilities()
  **/ 
 int setup_syscall_filters()
 {
+    scmp_filter_ctx seccomp_ctx = seccomp_init(SCMP_ACT_ALLOW);
+    if(!secomp_ctx){
+        fprintf(stderr, "seccomp initialization failed: %m\n");
+        return EXIT_FAILURE;
+    }
+
+    //Filter case for move_pages
+    int filter_set_status = seccomp_rule_add( 
+        seccomp_ctx,
+        SCMP_FAIL,
+        SCMP_SYS(move_pages),
+        0);
+
+    if(filter_set_status){
+        if(seccomp_ctx)
+            seccomp_release(seccomp_ctx);
+        fprintf(stderr, "seccomp could not add KILL rule for 'move_pages': %m\n");
+        return EXIT_FAILURE;
+    }
+    //Filter case for mbind
+    int filter_set_status = seccomp_rule_add( 
+        seccomp_ctx,
+        SCMP_FAIL,
+        SCMP_SYS(mbind),
+        0);
+
+    if(filter_set_status){
+        if(seccomp_ctx)
+            seccomp_release(seccomp_ctx);
+        fprintf(stderr, "seccomp could not add KILL rule for 'mbind': %m\n");
+        return EXIT_FAILURE;
+    }
+    //Filter case for migrate_pages
+    int filter_set_status = seccomp_rule_add( 
+        seccomp_ctx,
+        SCMP_FAIL,
+        SCMP_SYS(migrate_pages),
+        0);
+
+    if(filter_set_status){
+        if(seccomp_ctx)
+            seccomp_release(seccomp_ctx);
+        fprintf(stderr, "seccomp could not add KILL rule for 'migrate_pages': %m\n");
+        return EXIT_FAILURE;
+    }
+    //Filter case for ptrace
+    int filter_set_status = seccomp_rule_add( 
+        seccomp_ctx,
+        SCMP_FAIL,
+        SCMP_SYS(ptrace),
+        0);
+
+    if(filter_set_status){
+        if(seccomp_ctx)
+            seccomp_release(seccomp_ctx);
+        fprintf(stderr, "seccomp could not add KILL rule for 'ptrace': %m\n");
+        return EXIT_FAILURE;
+    }
+
     return 0;
 }
 
