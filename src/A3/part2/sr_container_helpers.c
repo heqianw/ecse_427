@@ -21,7 +21,7 @@ int switch_child_root(const char *new_root, const char *put_old)
      *  ------------------------------------------------------
      * */ 
 
-    if(pivot_root(new_root, put_old) == -1){
+    if(syscall(SYS_pivot_root, new_root, put_old)) == -1){
         printf("The pivot root failed.\n");
         return -1;
     }
@@ -101,7 +101,7 @@ int setup_child_capabilities()
 int setup_syscall_filters()
 {
     scmp_filter_ctx seccomp_ctx = seccomp_init(SCMP_ACT_ALLOW);
-    if(!secomp_ctx){
+    if(!seccomp_ctx){
         fprintf(stderr, "seccomp initialization failed: %m\n");
         return EXIT_FAILURE;
     }

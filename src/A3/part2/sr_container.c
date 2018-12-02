@@ -73,8 +73,7 @@ struct cgroups_control *cgroups[6] = {
  **/
 int main(int argc, char **argv)
 {
-    struct child_config config = {0};
-    struct 
+    struct child_config config = {0}; 
     int option = 0;
     int sockets[2] = {0};
     pid_t child_pid = 0;
@@ -341,7 +340,9 @@ int main(int argc, char **argv)
     if (child_pid == -1)
     {
         fprintf(stderr, "####### > child creation failed! %m\n");
-        clean_child_structures(&config, cgroups, stack);
+        // changed stack for pchild_stack
+        // clean_child_structures(&config, cgroups, stack);
+        clean_child_structures(&config, cgroups, pchild_stack);
         cleanup_sockets(sockets);
         return EXIT_FAILURE;
     }
