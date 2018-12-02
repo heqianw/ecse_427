@@ -16,6 +16,8 @@
  *  You must add this to all the controls you create so that it is added to the task list.
  *  See the example 'cgroups_control' added to the array of controls - 'cgroups' - below
  **/  
+int counter_cgroups = 1;
+int counter_blkio_settings = 1;
 struct cgroup_setting self_to_task = {
 	.name = "tasks",
 	.value = "0"
@@ -29,7 +31,7 @@ struct cgroup_setting self_to_task = {
  *      in the comments for the main() below
  *  ------------------------------------------------------
  **/ 
-struct cgroups_control *cgroups[5] = {
+struct cgroups_control *cgroups[6] = {
 	& (struct cgroups_control) {
 		.control = CGRP_BLKIO_CONTROL,
 		.settings = (struct cgroup_setting *[]) {
@@ -38,58 +40,11 @@ struct cgroups_control *cgroups[5] = {
 				.value = "64"
 			},
 			&self_to_task,             // must be added to all the new controls added
-			NULL                       // NULL at the end of the array
+			NULL,                      // NULL at the end of the array
+            NULL,
+            NULL
 		}
 	},
-
-    & (struct cgroups_control) {
-		.control = CGRP_MEMORY_CONTROL,
-		.settings = (struct cgroup_setting *[]) {
-			& (struct cgroup_setting) {
-				.name = "blkio.weight",
-				.value = "64"
-			},
-			&self_to_task,             // must be added to all the new controls added
-			NULL                       // NULL at the end of the array
-		}
-	},
-
-    & (struct cgroups_control) {
-		.control = CGRP_CPU_CONTROL,
-		.settings = (struct cgroup_setting *[]) {
-			& (struct cgroup_setting) {
-				.name = "blkio.weight",
-				.value = "64"
-			},
-			&self_to_task,             // must be added to all the new controls added
-			NULL                       // NULL at the end of the array
-		}
-	},
-
-    & (struct cgroups_control) {
-		.control = CGRP_CPU_SET_CONTROL,
-		.settings = (struct cgroup_setting *[]) {
-			& (struct cgroup_setting) {
-				.name = "blkio.weight",
-				.value = "64"
-			},
-			&self_to_task,             // must be added to all the new controls added
-			NULL                       // NULL at the end of the array
-		}
-	},
-
-    & (struct cgroups_control) {
-		.control = CGRP_PIDS_CONTROL,
-		.settings = (struct cgroup_setting *[]) {
-			& (struct cgroup_setting) {
-				.name = "blkio.weight",
-				.value = "64"
-			},
-			&self_to_task,             // must be added to all the new controls added
-			NULL                       // NULL at the end of the array
-		}
-	},
-
 	NULL                               // NULL at the end of the array
 };
 
@@ -125,6 +80,7 @@ int main(int argc, char **argv)
     pid_t child_pid = 0;
     int last_optind = 0;
     bool found_cflag = false;
+
     while ((option = getopt(argc, argv, "c:m:u:C:s:p:M:r:w:H:")))
     {
         if (found_cflag)
@@ -151,100 +107,139 @@ int main(int argc, char **argv)
         
         // case to update cpu shares weight
         case 'C':
-            & (struct cgroups_control) {
+            cgroups[counter_cgroups] =  & (struct cgroups_control) {
 		        .control = CGRP_CPU_CONTROL,
 		        .settings = (struct cgroup_setting *[]) {
 			        & (struct cgroup_setting) {
 				        .name = "cpu.shares",
-				        .value = argv[last_optind + 1]
+				        // .value = argv[last_optind + 1]
+                        .value = ""
 			        },
 			        &self_to_task,             // must be added to all the new controls added
-			        NULL                       // NULL at the end of the array
+			        NULL,                       // NULL at the end of the array
+                    NULL,
+                    NULL
 		        }
-	        },
-	        NULL         
+	        };
+	        memcpy(&(cgroups[counter_cgroups] -> settings[0] -> value), optarg, strlen(optarg));
+            counter_cgroups++;         
             break;
 
         // case to set max number of processes
         case 'p':
-            & (struct cgroups_control) {
+            cgroups[counter_cgroups] = & (struct cgroups_control) {
 		        .control = CGRP_PIDS_CONTROL,
 		        .settings = (struct cgroup_setting *[]) {
 			        & (struct cgroup_setting) {
-				        .name = "pids.maxProcesses",
-				        .value = argv[last_optind + 1]
+				        .name = "pids.max",
+				        // .value = argv[last_optind + 1]
+                        .value = ""
 			        },
 			        &self_to_task,             // must be added to all the new controls added
-			        NULL                       // NULL at the end of the array
+			        NULL,                       // NULL at the end of the array
+                    NULL,
+                    NULL
 		        }
-	        },
-	        NULL         
+	        };
+	        memcpy(&(cgroups[counter_cgroups] -> settings[0] -> value), optarg, strlen(optarg));
+            counter_cgroups++;
             break;
 
         // case to which the cores must be limited
         case 's':
-            & (struct cgroups_control) {
+            cgroups[counter_cgroups] = & (struct cgroups_control) {
 		        .control = CGRP_CPU_SET_CONTROL,
 		        .settings = (struct cgroup_setting *[]) {
 			        & (struct cgroup_setting) {
-				        .name = "cpuset.cores",
-				        .value = argv[last_optind + 1]
+				        .name = "cpuset.cpus",
+				        // .value = argv[last_optind + 1]
+                        .value = ""
 			        },
 			        &self_to_task,             // must be added to all the new controls added
-			        NULL                       // NULL at the end of the array
+			        NULL,                       // NULL at the end of the array
+                    NULL,
+                    NULL
 		        }
-	        },
-	        NULL         
+	        };
+	        memcpy(&(cgroups[counter_cgroups] -> settings[0] -> value), optarg, strlen(optarg));
+            counter_cgroups++;         
             break;
 
         // case to set max memory consumption
         case 'M':
-            & (struct cgroups_control) {
+            cgroups[counter_cgroups] = & (struct cgroups_control) {
 		        .control = CGRP_MEMORY_CONTROL,
 		        .settings = (struct cgroup_setting *[]) {
 			        & (struct cgroup_setting) {
-				        .name = "memory.maxMemory",
-				        .value = argv[last_optind + 1]
+				        .name = "memory.max_usage_in_bytes",
+				        // .value = argv[last_optind + 1]
+                        .value = ""
 			        },
 			        &self_to_task,             // must be added to all the new controls added
-			        NULL                       // NULL at the end of the array
+			        NULL,                       // NULL at the end of the array
+                    NULL,
+                    NULL
 		        }
-	        },
-	        NULL         
+	        };
+	        memcpy(&(cgroups[counter_cgroups] -> settings[0] -> value), optarg, strlen(optarg));
+            counter_cgroups++;          
             break;
+            
         // case when we want to set the read rate
         case 'r':
-            & (struct cgroups_control) {
-		        .control = CGRP_BLKIO_CONTROL,
-		        .settings = (struct cgroup_setting *[]) {
-			        & (struct cgroup_setting) {
-				        .name = "blkio.readRate",
-				        .value = argv[last_optind + 1]
-			        },
-			        &self_to_task,             // must be added to all the new controls added
-			        NULL                       // NULL at the end of the array
-		        }
-	        },
-	        NULL         
-            break;cgroups
 
+            // cgroups[counter_cgroups] = & (struct cgroups_control) {
+		    //     .control = CGRP_BLKIO_CONTROL,
+		    //     .settings = (struct cgroup_setting *[]) {
+			//         & (struct cgroup_setting) {
+			// 	        .name = "blkio.readRate",
+			// 	        .value = argv[last_optind + 1]
+			//         },
+			//         &self_to_task,             // must be added to all the new controls added
+			//         NULL                       // NULL at the end of the array
+		    //     }
+	        // };
+            // memcpy(&(cgroups[counter_cgroups]->settings[0]->value), optarg, strlen(optarg));
+            // counter_cgroups++;  
+
+            cgroups[0] -> cgroup_setting[counter_blkio_settings] = & (struct cgroup_setting) {
+				        .name = "blkio.throttle.read_bps_device",
+				        // .value = argv[last_optind + 1]
+                        .value = ""
+			        };
+            memcpy(&(cgroups[0] -> settings[counter_blkio_settings] -> value), optarg, strlen(optarg));
+            counter_blkio_settings++;
+            break;
+
+        // case when we want to set the write rate
         case 'w':
-            & (struct cgroups_control) {
-		        .control = CGRP_BLKIO_CONTROL,
-		        .settings = (struct cgroup_setting *[]) {
-			        & (struct cgroup_setting) {
-				        .name = "blkio.writeRate",
-				        .value = argv[last_optind + 1]
-			        },
-			        &self_to_task,             // must be added to all the new controls added
-			        NULL                       // NULL at the end of the array
-		        }
-	        },
-	        NULL         
+
+            // & (struct cgroups_control) {
+		    //     .control = CGRP_BLKIO_CONTROL,
+		    //     .settings = (struct cgroup_setting *[]) {
+			//         & (struct cgroup_setting) {
+			// 	        .name = "blkio.writeRate",
+			// 	        .value = argv[last_optind + 1]
+			//         },
+			//         &self_to_task,             // must be added to all the new controls added
+			//         NULL                       // NULL at the end of the array
+		    //     }
+	        // },
+	        // NULL         
+
+            cgroups[0] -> cgroup_setting[counter_blkio_settings] = & (struct cgroup_setting) {
+				        .name = "blkio.throttle.write_bps_device",
+				        // .value = argv[last_optind + 1]
+                        .value = ""
+			        };
+            memcpy(&(cgroups[0] -> settings[counter_blkio_settings] -> value), optarg, strlen(optarg));
+            counter_blkio_settings++;
+            
             break;       
         
         case 'H':
-            config.hostname = argv[last_optind + 1];
+            // config.hostname = argv[last_optind + 1];
+            memcpy(config.hostname, optarg, strlen(optarg));
             break;
 
         default:
