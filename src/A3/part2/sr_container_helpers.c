@@ -29,7 +29,7 @@ int switch_child_root(const char *new_root, const char *put_old)
     //     printf("Unable to change directory.\n");
     //     return -1;
     // }
-    TRY (syscall(SYS_pivot_root, new_root, put_old));
+    syscall(SYS_pivot_root, new_root, put_old);
     return 0;
 }
 
@@ -74,7 +74,7 @@ int setup_child_capabilities()
         return EXIT_FAILURE;
     }
 
-    int clear_inh_set = cap_set_flag(caps, CAP_INHERITABLE, num_caps, drop_caps, CAP_CLEAR);
+    int clear_inh_set = cap_set_flag(caps, CAP_INHERITABLE, num_caps_to_drop, drop_caps, CAP_CLEAR);
     if(clear_inh_set){
         perror("cap_set_flag");
         cap_free(caps);
@@ -110,7 +110,7 @@ int setup_syscall_filters()
     //Filter case for move_pages
     int filter_set_status = seccomp_rule_add( 
         seccomp_ctx,
-        SCMP_FAIL,
+        SCMP_ACT_KILL,
         SCMP_SYS(move_pages),
         0);
 
@@ -123,7 +123,7 @@ int setup_syscall_filters()
     //Filter case for mbind
     filter_set_status = seccomp_rule_add( 
         seccomp_ctx,
-        SCMP_FAIL,
+        SCMP_ACT_KILL,
         SCMP_SYS(mbind),
         0);
 
@@ -136,7 +136,7 @@ int setup_syscall_filters()
     //Filter case for migrate_pages
     filter_set_status = seccomp_rule_add( 
         seccomp_ctx,
-        SCMP_FAIL,
+        SCMP_ACT_KILL,
         SCMP_SYS(migrate_pages),
         0);
 
@@ -149,7 +149,7 @@ int setup_syscall_filters()
     //Filter case for ptrace
     filter_set_status = seccomp_rule_add( 
         seccomp_ctx,
-        SCMP_FAIL,
+        SCMP_ACT_KILL,
         SCMP_SYS(ptrace),
         0);
 
@@ -162,7 +162,7 @@ int setup_syscall_filters()
     //Filter case for unshare (only if CLONE_NEWUSER)
     filter_set_status = seccomp_rule_add( 
         seccomp_ctx,
-        SCMP_FAIL,
+        SCMP_ACT_KILL,
         SCMP_SYS(unshare),
         1,
         SCMP_A0(SCMP_CMP_MASKED_EQ, CLONE_NEWUSER, CLONE_NEWUSER));
@@ -177,7 +177,7 @@ int setup_syscall_filters()
     //Filter case for clone (only if CLONE_NEWUSER)
     filter_set_status = seccomp_rule_add( 
         seccomp_ctx,
-        SCMP_FAIL,
+        SCMP_ACT_KILL,
         SCMP_SYS(clone),
         1,
         SCMP_A0(SCMP_CMP_MASKED_EQ, CLONE_NEWUSER, CLONE_NEWUSER));
@@ -189,7 +189,7 @@ int setup_syscall_filters()
         return EXIT_FAILURE;
     }
     
-    filter set_status = seccomp_attr_set(seccomp_ctx, SCMP_FLTATR_CTL_NNP, 0);
+    filter_set_status = seccomp_attr_set(seccomp_ctx, SCMP_FLTATR_CTL_NNP, 0);
     if(filter_set_status){
         if(seccomp_ctx)
             seccomp_release(seccomp_ctx);
@@ -197,7 +197,7 @@ int setup_syscall_filters()
         return EXIT_FAILURE;
     }
 
-    filter set_status = seccomp_load(seccomp_ctx);
+    filter_set_status = seccomp_load(seccomp_ctx);
     if(filter_set_status){
         if(seccomp_ctx)
             seccomp_release(seccomp_ctx);

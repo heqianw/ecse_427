@@ -215,13 +215,13 @@ int main(int argc, char **argv)
             memcpy(&(cgroups[0] -> settings[counter_blkio_settings] -> value), optarg, strlen(optarg));
             counter_blkio_settings++;
             (cgroups[0]->settings[counter_blkio_settings]) = &self_to_task;
-            next_blkio_setting++;
+            counter_blkio_settings++;
             (cgroups[0]->settings[counter_blkio_settings]) = NULL;
-            next_blkio_setting++;
+            counter_blkio_settings++;
             (cgroups[0]->settings[counter_blkio_settings]) = NULL;
-            next_blkio_setting++;
+            counter_blkio_settings++;
             (cgroups[0]->settings[counter_blkio_settings]) = NULL;
-            next_blkio_setting++;
+            counter_blkio_settings++;
             break;
 
         // case when we want to set the write rate
@@ -249,13 +249,13 @@ int main(int argc, char **argv)
             memcpy(&(cgroups[0] -> settings[counter_blkio_settings] -> value), optarg, strlen(optarg));
             counter_blkio_settings++;
             (cgroups[0]->settings[counter_blkio_settings]) = &self_to_task;
-            next_blkio_setting++;
+            counter_blkio_settings++;
             (cgroups[0]->settings[counter_blkio_settings]) = NULL;
-            next_blkio_setting++;
+            counter_blkio_settings++;
             (cgroups[0]->settings[counter_blkio_settings]) = NULL;
-            next_blkio_setting++;
+            counter_blkio_settings++;
             (cgroups[0]->settings[counter_blkio_settings]) = NULL;
-            next_blkio_setting++;
+            counter_blkio_settings++;
             break;       
         
         case 'H':
@@ -354,7 +354,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     child_pid = clone(child_function, pchild_stack + (1024 * 1024), SIGCHLD | CLONE_NEWNET | 
-    CLONE_NEWCGROUP | CLONE_NEWPID | CLONE_NEWIPC | CLONE_NEWNS | CLONE_NEWUTS, config);
+    CLONE_NEWCGROUP | CLONE_NEWPID | CLONE_NEWIPC | CLONE_NEWNS | CLONE_NEWUTS, &config);
 
 
     /**
