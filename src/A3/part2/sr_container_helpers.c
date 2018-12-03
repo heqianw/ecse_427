@@ -21,14 +21,15 @@ int switch_child_root(const char *new_root, const char *put_old)
      *  ------------------------------------------------------
      * */ 
 
-    if(syscall(SYS_pivot_root, new_root, put_old)) == -1){
-        printf("The pivot root failed.\n");
-        return -1;
-    }
-    if(chdir("/") == -1){
-        printf("Unable to change directory.\n");
-        return -1;
-    }
+    // if(syscall(SYS_pivot_root, new_root, put_old)) == -1){
+    //     printf("The pivot root failed.\n");
+    //     return -1;
+    // }
+    // if(chdir("/") == -1){
+    //     printf("Unable to change directory.\n");
+    //     return -1;
+    // }
+    TRY (syscall(SYS_pivot_root, new_root, put_old));
     return 0;
 }
 
@@ -87,7 +88,7 @@ int setup_child_capabilities()
         return EXIT_FAILURE;
     }
 
-    caps_free(caps);
+    cap_free(caps);
 
     return 0;
 }
@@ -120,7 +121,7 @@ int setup_syscall_filters()
         return EXIT_FAILURE;
     }
     //Filter case for mbind
-    int filter_set_status = seccomp_rule_add( 
+    filter_set_status = seccomp_rule_add( 
         seccomp_ctx,
         SCMP_FAIL,
         SCMP_SYS(mbind),
@@ -133,7 +134,7 @@ int setup_syscall_filters()
         return EXIT_FAILURE;
     }
     //Filter case for migrate_pages
-    int filter_set_status = seccomp_rule_add( 
+    filter_set_status = seccomp_rule_add( 
         seccomp_ctx,
         SCMP_FAIL,
         SCMP_SYS(migrate_pages),
@@ -146,7 +147,7 @@ int setup_syscall_filters()
         return EXIT_FAILURE;
     }
     //Filter case for ptrace
-    int filter_set_status = seccomp_rule_add( 
+    filter_set_status = seccomp_rule_add( 
         seccomp_ctx,
         SCMP_FAIL,
         SCMP_SYS(ptrace),
@@ -159,7 +160,7 @@ int setup_syscall_filters()
         return EXIT_FAILURE;
     }
     //Filter case for unshare (only if CLONE_NEWUSER)
-    int filter_set_status = seccomp_rule_add( 
+    filter_set_status = seccomp_rule_add( 
         seccomp_ctx,
         SCMP_FAIL,
         SCMP_SYS(unshare),
@@ -174,7 +175,7 @@ int setup_syscall_filters()
     }
 
     //Filter case for clone (only if CLONE_NEWUSER)
-    int filter_set_status = seccomp_rule_add( 
+    filter_set_status = seccomp_rule_add( 
         seccomp_ctx,
         SCMP_FAIL,
         SCMP_SYS(clone),

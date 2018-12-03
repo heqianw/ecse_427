@@ -161,6 +161,12 @@ int main(int argc, char **argv)
 		        }
 	        };
 	        memcpy(&(cgroups[counter_cgroups] -> settings[0] -> value), optarg, strlen(optarg));
+            (cgroups[counter_cgroups] -> settings[1]) = & (struct cgroup_setting) {
+				                                        .name = "cpuset.mem",
+				                                        .value = "0"
+			                                        };
+            (cgroups[counter_cgroups] -> settings[2]) = &self_to_task;
+            (cgroups[counter_cgroups] -> settings[3]) = NULL;
             counter_cgroups++;         
             break;
 
@@ -170,7 +176,7 @@ int main(int argc, char **argv)
 		        .control = CGRP_MEMORY_CONTROL,
 		        .settings = (struct cgroup_setting *[]) {
 			        & (struct cgroup_setting) {
-				        .name = "memory.max_usage_in_bytes",
+				        .name = "memory.limit_in_bytes",
 				        // .value = argv[last_optind + 1]
                         .value = ""
 			        },
@@ -201,13 +207,21 @@ int main(int argc, char **argv)
             // memcpy(&(cgroups[counter_cgroups]->settings[0]->value), optarg, strlen(optarg));
             // counter_cgroups++;  
 
-            cgroups[0] -> cgroup_setting[counter_blkio_settings] = & (struct cgroup_setting) {
+            cgroups[0] -> settings[counter_blkio_settings] = & (struct cgroup_setting) {
 				        .name = "blkio.throttle.read_bps_device",
 				        // .value = argv[last_optind + 1]
                         .value = ""
 			        };
             memcpy(&(cgroups[0] -> settings[counter_blkio_settings] -> value), optarg, strlen(optarg));
             counter_blkio_settings++;
+            (cgroups[0]->settings[counter_blkio_settings]) = &self_to_task;
+            next_blkio_setting++;
+            (cgroups[0]->settings[counter_blkio_settings]) = NULL;
+            next_blkio_setting++;
+            (cgroups[0]->settings[counter_blkio_settings]) = NULL;
+            next_blkio_setting++;
+            (cgroups[0]->settings[counter_blkio_settings]) = NULL;
+            next_blkio_setting++;
             break;
 
         // case when we want to set the write rate
@@ -226,19 +240,28 @@ int main(int argc, char **argv)
 	        // },
 	        // NULL         
 
-            cgroups[0] -> cgroup_setting[counter_blkio_settings] = & (struct cgroup_setting) {
+            cgroups[0] -> settings[counter_blkio_settings] = & (struct cgroup_setting) {
 				        .name = "blkio.throttle.write_bps_device",
 				        // .value = argv[last_optind + 1]
                         .value = ""
 			        };
+
             memcpy(&(cgroups[0] -> settings[counter_blkio_settings] -> value), optarg, strlen(optarg));
             counter_blkio_settings++;
-            
+            (cgroups[0]->settings[counter_blkio_settings]) = &self_to_task;
+            next_blkio_setting++;
+            (cgroups[0]->settings[counter_blkio_settings]) = NULL;
+            next_blkio_setting++;
+            (cgroups[0]->settings[counter_blkio_settings]) = NULL;
+            next_blkio_setting++;
+            (cgroups[0]->settings[counter_blkio_settings]) = NULL;
+            next_blkio_setting++;
             break;       
         
         case 'H':
             // config.hostname = argv[last_optind + 1];
-            memcpy(config.hostname, optarg, strlen(optarg));
+            // memcpy(config.hostname, optarg, strlen(optarg));
+            config.hostname = optarg;
             break;
 
         default:
@@ -331,7 +354,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     child_pid = clone(child_function, pchild_stack + (1024 * 1024), SIGCHLD | CLONE_NEWNET | 
-    CLONE_NEWCGROUP | CLONE_NEWPID | CLONE_NEWIPC | CLONE_NEWNS | CLONE_NEWUTS, argv[1]);
+    CLONE_NEWCGROUP | CLONE_NEWPID | CLONE_NEWIPC | CLONE_NEWNS | CLONE_NEWUTS, config);
 
 
     /**
@@ -359,7 +382,9 @@ int main(int argc, char **argv)
     waitpid(child_pid, &child_status, 0);
     int exit_status = WEXITSTATUS(child_status);
 
-    clean_child_structures(&config, cgroups, stack);
+    // changed stack for pchild_stack
+    // clean_child_structures(&config, cgroups, stack);
+    clean_child_structures(&config, cgroups, pchild_stack);
     cleanup_sockets(sockets);
     return exit_status;
 }
