@@ -162,7 +162,7 @@ int main(int argc, char **argv)
 	        };
 	        memcpy(&(cgroups[counter_cgroups] -> settings[0] -> value), optarg, strlen(optarg));
             (cgroups[counter_cgroups] -> settings[1]) = & (struct cgroup_setting) {
-				                                        .name = "cpuset.mem",
+				                                        .name = "cpuset.mems",
 				                                        .value = "0"
 			                                        };
             (cgroups[counter_cgroups] -> settings[2]) = &self_to_task;
